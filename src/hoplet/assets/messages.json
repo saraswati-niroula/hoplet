@@ -1,0 +1,62 @@
+{
+  "reminders": [
+    "Psst! Your chair says it needs a little break from you~",
+    "Stand up and reach for the sky! Stretchhh like a sleepy cat~",
+    "Water check! Is your bottle full or sad and empty?",
+    "Shoulders up to your ears? Drop 'em! Ahh, much better~",
+    "Quick! Look out the window and find something far away!",
+    "Dance break! Nobody's watching. Probably.",
+    "Your legs called. They miss walking around!",
+    "Wiggle your toes, roll your neck, shake it out!",
+    "Hydration station is open! Go grab a sip~",
+    "Unclench that jaw, serious face! Smile a little~",
+    "Your back is doing its best. Give it a stretch?",
+    "Blink blink! Your eyes deserve a tiny vacation~",
+    "Let's go on an adventure... to the kitchen and back!",
+    "Time for a quick lap! I'll wait right here~",
+    "Sitting champion detected! Time to stand up!",
+    "Pretend you're a tree and stretch your branches up high!",
+    "Is that a slouch I see? Sit tall, superstar!",
+    "Plants need water. So do you! Go hydrate~",
+    "Glug glug time! Drink a big glass of water~",
+    "Sip sip hooray! Have some water, please!",
+    "Feeling sleepy? Maybe you're just thirsty. Water!",
+    "Your brain is mostly water. Top it up~",
+    "Cheers! Raise your water glass with me~",
+    "{name}'s orders: one glass of water, right now!",
+    "{name} reporting for stretch duty!",
+    "{name} here! Let's shake those legs~",
+    "Beep boop! {name}'s break alarm is ringing!"
+  ],
+  "encouragements": [
+    "Yay! You're amazing!",
+    "Woohoo! Go go go!",
+    "Your body is doing a happy dance right now~",
+    "Best human ever! Proud of you!",
+    "Look at you, taking care of yourself!",
+    "That's the spirit! High five!",
+    "Hehe, enjoy your break~",
+    "Gold star for you!"
+  ],
+  "snooze": [
+    "Okay~ {minutes} more minutes. I'm counting!",
+    "Fine, fine! Back in {minutes}. No escaping~",
+    "Deal! {minutes} minutes, then we move!",
+    "I'll go nap for {minutes} minutes. Zzz~",
+    "Okie! See you in {minutes}. Don't forget!"
+  ],
+  "goodbyes": [
+    "{name} will check on you later!",
+    "Bye bye~ Don't forget to blink!",
+    "Hop hop, see you soon!",
+    "Okay, I'll let you work. For now~"
+  ],
+  "pats": [
+    "Hehe~",
+    "That tickles!",
+    "Hi hi! It's me, {name}!",
+    "Eee!",
+    "Boop!",
+    "Again! Again!"
+  ]
+}

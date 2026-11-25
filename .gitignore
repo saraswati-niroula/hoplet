@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+
+# Environments
+.venv/
+venv/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Personal data never belongs in the repo (settings live in ~/.config/hoplet/)
+config/
+*.log

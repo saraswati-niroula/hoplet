@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hoplet"
+dynamic = ["version"]
+description = "A little hopping companion who pops onto your Linux desktop to remind you to stand up, stretch and drink water."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+keywords = ["desktop pet", "break reminder", "health", "posture", "stretch", "pyside6", "linux"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Utilities",
+]
+dependencies = [
+    # PySide6 6.12.0 crashes on Python < 3.12 ("none_dealloc: deallocating None").
+    "PySide6-Essentials>=6.6,<6.12; python_version < '3.12'",
+    "PySide6-Essentials>=6.6; python_version >= '3.12'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "build", "twine"]
+
+[project.scripts]
+hoplet = "hoplet.main:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "hoplet.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hoplet = ["assets/*.json", "assets/icons/*.png"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
