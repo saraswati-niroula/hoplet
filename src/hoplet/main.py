@@ -22,9 +22,11 @@ from . import __version__
 
 
 def prepare_platform() -> None:
-    """GNOME/KDE on Wayland don't let apps position their own windows or stay
-    on top, so run through XWayland (xcb) instead. Must happen before
-    QApplication is created."""
+    """Linux only: GNOME/KDE on Wayland don't let apps position their own
+    windows or stay on top, so run through XWayland (xcb) instead. Must happen
+    before QApplication is created."""
+    if sys.platform in ("win32", "darwin"):
+        return
     on_wayland = os.environ.get("XDG_SESSION_TYPE") == "wayland" or "WAYLAND_DISPLAY" in os.environ
     if on_wayland and "QT_QPA_PLATFORM" not in os.environ and os.environ.get("DISPLAY"):
         os.environ["QT_QPA_PLATFORM"] = "xcb"
@@ -37,6 +39,28 @@ def prepare_platform() -> None:
                      "    sudo apt install libxcb-cursor0        (Debian/Ubuntu)\n"
                      "    sudo dnf install xcb-util-cursor       (Fedora)\n"
                      "    sudo pacman -S xcb-util-cursor         (Arch)")
+
+
+def hide_dock_icon() -> None:
+    """macOS: live only in the menu bar, like other menu-bar apps (no Dock icon).
+    Same as LSUIElement in an app bundle; done through the Objective-C runtime
+    so no extra dependency is needed. Best effort."""
+    if sys.platform != "darwin":
+        return
+    try:
+        import ctypes.util
+        objc = ctypes.cdll.LoadLibrary(ctypes.util.find_library("objc"))
+        objc.objc_getClass.restype = ctypes.c_void_p
+        objc.sel_registerName.restype = ctypes.c_void_p
+        send = objc.objc_msgSend
+        get = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)(
+            ctypes.cast(send, ctypes.c_void_p).value)
+        set_policy = ctypes.CFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)(
+            ctypes.cast(send, ctypes.c_void_p).value)
+        ns_app = get(objc.objc_getClass(b"NSApplication"), objc.sel_registerName(b"sharedApplication"))
+        set_policy(ns_app, objc.sel_registerName(b"setActivationPolicy:"), 1)  # Accessory
+    except Exception as exc:                 # noqa: BLE001 - a Dock icon is harmless
+        logging.getLogger("hoplet").debug("Could not hide the Dock icon (%s)", exc)
 
 
 def parse_args(argv=None) -> argparse.Namespace:
@@ -95,7 +119,8 @@ def uninstall() -> int:
         shutil.rmtree(CACHE_DIR, ignore_errors=True)
         print(f"removed {CACHE_DIR}")
     print("\nKept your settings and custom art (delete them yourself if you like):")
-    print(f"  {CONFIG_DIR}\n  {DATA_DIR}")
+    for folder in dict.fromkeys((CONFIG_DIR, DATA_DIR)):     # the same folder on Windows/macOS
+        print(f"  {folder}")
     print("\nTo remove the program itself:  pipx uninstall hoplet   (or: pip uninstall hoplet)")
     return 0
 
@@ -132,8 +157,11 @@ def main(argv=None) -> int:
     app.setDesktopFileName("hoplet")
     app.setWindowIcon(QIcon(str(APP_ICON)))
     app.setQuitOnLastWindowClosed(False)          # we live in the tray
+    hide_dock_icon()
 
-    lock = QLockFile(QDir.temp().filePath(f"hoplet-{os.getuid()}.lock"))
+    # One Hoplet per user. The temp folder is already per-user on Windows/macOS.
+    user = os.getuid() if hasattr(os, "getuid") else "user"
+    lock = QLockFile(QDir.temp().filePath(f"hoplet-{user}.lock"))
     if not lock.tryLock(100):
         logging.info("Hoplet is already running.")
         return 0
@@ -215,8 +243,7 @@ def main(argv=None) -> int:
         tray.set_paused(not settings.reminders_enabled)
         tray.show()
     else:
-        log.warning("No system tray available. Right-click the character for Settings/Quit, "
-                    "or stop Hoplet with: pkill -f 'python.* -m hoplet'")
+        log.warning("No system tray available. Right-click the character for Settings/Quit.")
 
     scheduler.start()
     log.info(scheduler.status_text())

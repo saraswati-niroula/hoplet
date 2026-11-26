@@ -403,7 +403,7 @@ def generate(out_dir: Path, gender: str, theme: Theme) -> Path:
         for i, pose in enumerate(factory()):
             render(pose, look).save(str(tmp / name / f"frame_{i:02d}.png"))
         manifest["animations"][name] = {"frames": f"{name}/*.png", "fps": fps, "loop": True}
-    (tmp / "animations.json").write_text(json.dumps(manifest, indent=2))
+    (tmp / "animations.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     render_icon(look, 64).save(str(tmp / "icon.png"))
     shutil.rmtree(out_dir, ignore_errors=True)
     tmp.rename(out_dir)

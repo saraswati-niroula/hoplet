@@ -139,16 +139,28 @@ def test_messages():
 
 def test_desktop_integration():
     import sys
+    from hoplet import paths
+    for path in (paths.CONFIG_DIR, paths.CACHE_DIR, autostart.AUTOSTART_FILE, autostart.LAUNCHER_FILE):
+        assert path is None or str(TMP) in str(path), path      # sandboxed by conftest
     autostart.sync(True)
-    for path in (autostart.AUTOSTART_FILE, autostart.LAUNCHER_FILE):
-        assert str(TMP) in str(path), path                      # sandboxed by conftest
-        text = path.read_text()
-        assert f"Exec={sys.executable} -m hoplet" in text and "Name=Hoplet" in text
-    assert "X-GNOME-Autostart-enabled=true" in autostart.AUTOSTART_FILE.read_text()
     assert autostart.is_enabled()
+    if paths.IS_LINUX:
+        for path in (autostart.AUTOSTART_FILE, autostart.LAUNCHER_FILE):
+            text = path.read_text()
+            assert f"Exec={sys.executable} -m hoplet" in text and "Name=Hoplet" in text
+        assert "X-GNOME-Autostart-enabled=true" in autostart.AUTOSTART_FILE.read_text()
+    elif paths.IS_MAC:
+        import plistlib
+        agent = plistlib.loads(autostart.AUTOSTART_FILE.read_bytes())
+        assert agent["ProgramArguments"] == [sys.executable, "-m", "hoplet"] and agent["RunAtLoad"]
+    else:
+        assert autostart.command().endswith('" -m hoplet') and "pythonw" in autostart.command().lower()
     autostart.set_enabled(False)
-    assert not autostart.is_enabled() and autostart.LAUNCHER_FILE.exists()
-    assert autostart.remove_all() == [autostart.LAUNCHER_FILE]
+    assert not autostart.is_enabled()
+    if autostart.LAUNCHER_FILE:
+        assert autostart.LAUNCHER_FILE.exists()
+        assert autostart.remove_all() == [str(autostart.LAUNCHER_FILE)]
+    assert autostart.remove_all() == []
 
 
 def test_character_name():
@@ -206,7 +218,8 @@ def test_cli_export_and_uninstall(capsys):
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     autostart.sync(True)
     assert main.main(["--uninstall"]) == 0
-    assert not CACHE_DIR.exists() and not autostart.is_enabled() and not autostart.LAUNCHER_FILE.exists()
+    assert not CACHE_DIR.exists() and not autostart.is_enabled()
+    assert autostart.LAUNCHER_FILE is None or not autostart.LAUNCHER_FILE.exists()
     assert "pipx uninstall hoplet" in capsys.readouterr().out
 
 

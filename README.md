@@ -1,6 +1,6 @@
 # Hoplet
 
-**A little hopping companion for your Linux desktop.**
+**A little hopping companion for your desktop: Linux, Windows and macOS.**
 
 Every so often, a tiny chibi friend hops onto the bottom of your screen to remind
 you to stand up, stretch, drink some water or rest your eyes. Then it hops
@@ -21,7 +21,10 @@ away again. It's a desktop pet, not a nagging productivity tool.
 
 ## Install
 
-Hoplet needs **Python 3.9+** and one small system library:
+Hoplet needs **Python 3.9+**. Install it with [pipx](https://pipx.pypa.io/), which
+keeps it in its own little environment.
+
+**Linux**: pipx and one small system library:
 
 ```bash
 sudo apt install pipx libxcb-cursor0        # Debian / Ubuntu
@@ -29,15 +32,31 @@ sudo apt install pipx libxcb-cursor0        # Debian / Ubuntu
 # sudo pacman -S python-pipx xcb-util-cursor   # Arch
 ```
 
-Then install and start it:
+**Windows**: install Python from [python.org](https://www.python.org/downloads/)
+(tick *Add python.exe to PATH*), then in a terminal:
+
+```powershell
+py -m pip install --user pipx
+py -m pipx ensurepath        # then open a new terminal
+```
+
+**macOS**: with [Homebrew](https://brew.sh/):
+
+```bash
+brew install pipx
+pipx ensurepath              # then open a new terminal
+```
+
+Then, on any system, install and start it:
 
 ```bash
 pipx install hoplet
 hoplet
 ```
 
-That's it. Hoplet now lives in your system tray, shows up in your app menu, and
-starts automatically when you log in (you can turn that off in Settings). The
+That's it. Hoplet now lives in your system tray (the menu bar on macOS) and
+starts automatically when you log in (you can turn that off in Settings). On
+Linux it also shows up in your app menu, and on Windows in the Start Menu. The
 first visit is one interval (60 minutes by default) after starting. To see it
 right away, use **Show reminder now** in the tray menu, or run `hoplet --show-now`.
 
@@ -63,8 +82,15 @@ your computer counts as a break, so it won't nag you the moment you wake it up.
 
 ## Settings
 
-Open **Settings…** from the tray or the right-click menu. Preferences are saved to
-`~/.config/hoplet/settings.json`:
+Open **Settings…** from the tray or the right-click menu. Preferences are saved in
+`settings.json` in Hoplet's settings folder:
+
+| System | Settings folder | Cache and log |
+|---|---|---|
+| Linux | `~/.config/hoplet/` | `~/.cache/hoplet/` |
+| Windows | `%APPDATA%\Hoplet\` | `%LOCALAPPDATA%\Hoplet\Cache\` |
+| macOS | `~/Library/Application Support/Hoplet/` | `~/Library/Caches/Hoplet/` |
+
 
 | Setting | Default | |
 |---|---|---|
@@ -82,7 +108,7 @@ Open **Settings…** from the tray or the right-click menu. Preferences are save
 
 ### Your own messages
 
-Create `~/.config/hoplet/messages.json`. Any category you include replaces the
+Create `messages.json` in the settings folder (see [Settings](#settings)). Any category you include replaces the
 built-in one (see the
 [built-in messages](src/hoplet/assets/messages.json) for all categories):
 
@@ -107,7 +133,10 @@ Hoplet's built-in characters are drawn by code. To use your own art:
    ```bash
    hoplet --export-character ~/.local/share/hoplet/characters/girl --gender girl
    ```
-   (use `boy` for the boy character). Hoplet now uses this folder instead of
+   (use `boy` for the boy character). On Windows and macOS, use the
+   `characters` folder inside the settings folder instead:
+   `hoplet --export-character "$env:APPDATA\Hoplet\characters\girl"` (Windows PowerShell) or
+   `hoplet --export-character ~/Library/Application\ Support/Hoplet/characters/girl` (macOS). Hoplet now uses this folder instead of
    the built-in art for that character.
 2. Replace the PNG frames with your own drawings. There are six animations:
 
@@ -150,25 +179,25 @@ With custom art, the color theme still styles the speech bubble and settings win
 ## Uninstall
 
 ```bash
-hoplet --uninstall      # removes the menu entry, autostart entry and cache
+hoplet --uninstall      # removes the menu/Start Menu entry, autostart entry and cache
 pipx uninstall hoplet
 ```
 
-Your settings (`~/.config/hoplet/`) and custom art (`~/.local/share/hoplet/`)
-are kept unless you delete them yourself.
+Your settings and custom art are kept unless you delete them yourself
+(`hoplet --uninstall` prints where they are).
 
 ## Troubleshooting
 
-- **Nothing appears:** check the log at `~/.cache/hoplet/companion.log`, or run
-  `hoplet --show-now -v` in a terminal.
+- **Nothing appears:** check `companion.log` in the cache folder (see
+  [Settings](#settings)), or run `hoplet --show-now -v` in a terminal.
 - **"needs the libxcb-cursor0 system library":** install it as shown in [Install](#install).
 - **Wayland:** Wayland doesn't let apps position their own windows or stay on
   top, so Hoplet automatically runs through XWayland. You don't need to do anything.
 - **No tray icon:** see the GNOME note in [Install](#install); the right-click
   menu on the character always works.
 
-Hoplet is built for Linux desktops on X11 or XWayland (GNOME, KDE, XFCE, …).
-Windows and macOS are untested.
+Hoplet runs on Linux desktops on X11 or XWayland (GNOME, KDE, XFCE, …),
+Windows 10/11 and macOS. On macOS it has no Dock icon; find it in the menu bar.
 
 ## Development
 
@@ -190,11 +219,11 @@ Code tour (`src/hoplet/`):
 | `animation_manager.py` | loads frame folders or sprite sheets, plays clips |
 | `reminder_scheduler.py` | when to visit: interval, snooze, working hours, sleep detection |
 | `placeholder_art.py` | draws the built-in girl and boy in any theme |
-| `character_assets.py` | picks custom art or the built-in characters (cached in `~/.cache/hoplet/`) |
+| `character_assets.py` | picks custom art or the built-in characters (cached in the cache folder) |
 | `themes.py` | color themes; add one line to `THEMES` for a new theme |
 | `message_manager.py` | random lines with `{name}`/`{minutes}` placeholders |
 | `settings.py`, `settings_dialog.py` | preferences and the settings window |
-| `tray.py`, `autostart.py` | tray icon, app-menu and login entries |
+| `tray.py`, `autostart.py` | tray icon, app-menu and login entries (per OS) |
 
 Notes:
 

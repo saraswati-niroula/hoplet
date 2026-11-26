@@ -176,6 +176,8 @@ class CharacterWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setAttribute(Qt.WidgetAttribute.WA_X11DoNotAcceptFocus)
+        # macOS hides tool windows whenever another app is active; she must not.
+        self.setAttribute(Qt.WidgetAttribute.WA_MacAlwaysShowToolWindow)
         self.setWindowTitle("Hoplet")
 
         self.bubble = SpeechBubble(self, theme)

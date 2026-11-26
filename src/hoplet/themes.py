@@ -89,17 +89,17 @@ class Theme:
         QComboBox, QSpinBox, QTimeEdit, QLineEdit {{ border: 2px solid {self.soft_border}; border-radius: 8px;
                      padding: 3px 6px; background: white; color: {self.text}; min-width: 110px; }}
         QComboBox::drop-down {{ border: none; width: 22px; }}
-        QComboBox::down-arrow {{ image: url({icons}/down.svg); width: 10px; height: 6px; }}
+        QComboBox::down-arrow {{ image: url("{icons}/down.svg"); width: 10px; height: 6px; }}
         QComboBox QAbstractItemView {{ border: 2px solid {self.soft_border}; background: white; color: {self.text};
                      selection-background-color: {self.light}; selection-color: {self.text}; }}
         QSpinBox::up-button, QTimeEdit::up-button {{ subcontrol-position: top right; border: none; width: 20px; }}
         QSpinBox::down-button, QTimeEdit::down-button {{ subcontrol-position: bottom right; border: none; width: 20px; }}
-        QSpinBox::up-arrow, QTimeEdit::up-arrow {{ image: url({icons}/up.svg); width: 10px; height: 6px; }}
-        QSpinBox::down-arrow, QTimeEdit::down-arrow {{ image: url({icons}/down.svg); width: 10px; height: 6px; }}
+        QSpinBox::up-arrow, QTimeEdit::up-arrow {{ image: url("{icons}/up.svg"); width: 10px; height: 6px; }}
+        QSpinBox::down-arrow, QTimeEdit::down-arrow {{ image: url("{icons}/down.svg"); width: 10px; height: 6px; }}
         QCheckBox::indicator, QGroupBox::indicator {{ width: 15px; height: 15px; border: 2px solid {self.main};
                      border-radius: 5px; background: white; }}
         QCheckBox::indicator:checked, QGroupBox::indicator:checked {{ background: {self.button};
-                     border-color: {self.deep}; image: url({icons}/check.svg); }}
+                     border-color: {self.deep}; image: url("{icons}/check.svg"); }}
         QPushButton {{ border-radius: 12px; padding: 7px 16px; font-weight: 700; }}
         QPushButton#save {{ background: {self.button}; color: {self.button_text}; border: 2px solid {self.deep}; }}
         QPushButton#save:hover {{ background: {self.mix('main', 'deep', 0.55)}; }}
@@ -124,9 +124,9 @@ class Theme:
         }
         for name, svg in svgs.items():
             path = folder / name
-            if not path.exists() or path.read_text() != svg:
+            if not path.exists() or path.read_text(encoding="utf-8") != svg:
                 folder.mkdir(parents=True, exist_ok=True)
-                path.write_text(svg)
+                path.write_text(svg, encoding="utf-8")
         return folder
 
 
