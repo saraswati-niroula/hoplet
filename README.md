@@ -201,14 +201,43 @@ Windows 10/11 and macOS. On macOS it has no Dock icon; find it in the menu bar.
 
 ## Development
 
+Get the code and set up a virtual environment with an editable install, so
+your code changes take effect the next time you start Hoplet:
+
+**Linux / macOS**
+
 ```bash
-git clone <this repository> && cd hoplet
+git clone https://github.com/saraswati-niroula/hoplet.git
+cd hoplet
 python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
-.venv/bin/hoplet --show-now --interval-seconds 30 -v   # fast visits for testing
-.venv/bin/pytest                                       # headless tests
-.venv/bin/python tests/manual/desktop_flow.py          # drives the real window on your desktop
+source .venv/bin/activate
+pip install -e ".[dev]"
 ```
+
+**Windows (PowerShell)**
+
+```powershell
+git clone https://github.com/saraswati-niroula/hoplet.git
+cd hoplet
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+```
+
+(If PowerShell refuses to run the activate script, run
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.)
+
+Then, with the environment active:
+
+```bash
+hoplet --show-now --interval-seconds 30 -v   # run it, with fast visits for testing
+pytest                                       # headless tests
+python tests/manual/desktop_flow.py          # Linux/X11 only: drives the real window on your desktop
+```
+
+To pick up code changes, quit Hoplet (tray menu → **Quit**) and start it again.
+If you also have a pipx-installed Hoplet running, quit that one first: only one
+Hoplet runs at a time.
 
 Code tour (`src/hoplet/`):
 
@@ -227,9 +256,12 @@ Code tour (`src/hoplet/`):
 
 Notes:
 
-- The character is an X11 *override-redirect* window with a shape mask. That's
-  what makes it stay on top, click-through and focus-free, and lets it hop in
-  from beyond the screen edge.
+- On Linux the character is an X11 *override-redirect* window with a shape mask.
+  That's what makes it stay on top, click-through and focus-free, and lets it hop
+  in from beyond the screen edge. On Windows and macOS it's a frameless,
+  always-on-top tool window with the same mask.
+- Platform-specific code lives in `main.py` (startup), `paths.py` (folders) and
+  `autostart.py` (Start Menu, login entries).
 - PySide6 6.12.0 crashes on Python < 3.12 (`none_dealloc: deallocating None`),
   so `pyproject.toml` keeps those Python versions on PySide6 < 6.12.
 
