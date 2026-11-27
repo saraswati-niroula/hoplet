@@ -32,6 +32,9 @@ def prepare_platform() -> None:
         os.environ["QT_QPA_PLATFORM"] = "xcb"
 
     if os.environ.get("QT_QPA_PLATFORM", "xcb").startswith("xcb"):
+        bundle = getattr(sys, "_MEIPASS", None)      # the AppImage ships its own copy
+        if bundle and list(Path(bundle).rglob("libxcb-cursor.so*")):
+            return
         try:
             ctypes.CDLL("libxcb-cursor.so.0")
         except OSError:
@@ -85,7 +88,8 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 def setup_logging(verbose: bool) -> None:
     from .paths import LOG_FILE
-    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    # The standalone Windows/macOS apps have no console (sys.stderr is None).
+    handlers: list[logging.Handler] = [logging.StreamHandler()] if sys.stderr else []
     try:
         LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
         handlers.append(logging.handlers.RotatingFileHandler(
@@ -112,7 +116,7 @@ def export_character(out_dir: Path, gender: str, theme_key: str) -> int:
 
 def uninstall() -> int:
     from . import autostart
-    from .paths import CACHE_DIR, CONFIG_DIR, DATA_DIR
+    from .paths import CACHE_DIR, CONFIG_DIR, DATA_DIR, IS_FROZEN, IS_MAC, IS_WINDOWS
     for path in autostart.remove_all():
         print(f"removed {path}")
     if CACHE_DIR.exists():
@@ -121,7 +125,14 @@ def uninstall() -> int:
     print("\nKept your settings and custom art (delete them yourself if you like):")
     for folder in dict.fromkeys((CONFIG_DIR, DATA_DIR)):     # the same folder on Windows/macOS
         print(f"  {folder}")
-    print("\nTo remove the program itself:  pipx uninstall hoplet   (or: pip uninstall hoplet)")
+    if not IS_FROZEN:
+        print("\nTo remove the program itself:  pipx uninstall hoplet   (or: pip uninstall hoplet)")
+    elif IS_WINDOWS:
+        print("\nTo remove the program itself: Settings > Apps > Hoplet > Uninstall")
+    elif IS_MAC:
+        print("\nTo remove the program itself: drag Hoplet from Applications to the Trash")
+    else:
+        print("\nTo remove the program itself: delete the Hoplet AppImage file")
     return 0
 
 

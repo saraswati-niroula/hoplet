@@ -1,0 +1,114 @@
+# Builds the standalone apps for people who don't use a terminal:
+#   Hoplet-Setup.exe           Windows installer
+#   Hoplet-macOS-arm64.dmg     macOS, Apple silicon (M1 and newer)
+#   Hoplet-macOS-intel.dmg     macOS, Intel
+#   Hoplet-x86_64.AppImage     Linux
+#
+# On a published GitHub Release they're attached to that release.
+# Run it by hand (Actions > Apps > Run workflow) to get test builds as
+# downloadable artifacts without making a release.
+name: Apps
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write          # attach the files to the release
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: Windows, os: windows-latest }
+          - { name: macOS (Apple silicon), os: macos-latest }
+          - { name: macOS (Intel), os: macos-15-intel }
+          # Oldest supported Ubuntu, so the AppImage runs on older distros too.
+          - { name: Linux, os: ubuntu-22.04 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          version=$(python -c "import sys; sys.path.insert(0, 'src'); import hoplet; print(hoplet.__version__)")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          tag="${{ github.event.release.tag_name }}"
+          if [ -n "$tag" ] && [ "$tag" != "v$version" ]; then
+            echo "::error::Release tag $tag doesn't match __version__ $version (expected v$version)"
+            exit 1
+          fi
+
+      - name: Linux libraries to bundle
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-xkb1 libxcb-shape0 libxcb-randr0 libxcb-xinerama0 \
+            libxkbcommon-x11-0 libegl1 libgl1 libfontconfig1 libdbus-1-3
+
+      - name: Install
+        run: pip install ".[app]"
+
+      - name: Build the app
+        run: pyinstaller packaging/hoplet.spec --noconfirm
+
+      - name: Smoke test (headless)
+        shell: bash
+        run: |
+          case "$RUNNER_OS" in
+            macOS)   app=dist/Hoplet.app/Contents/MacOS/Hoplet ;;
+            Windows) app=dist/Hoplet/Hoplet.exe ;;
+            *)       app=dist/Hoplet/Hoplet ;;
+          esac
+          "$app" --export-character smoke-test
+          test -f smoke-test/animations.json
+          test -f smoke-test/idle/frame_00.png
+
+      # ---- package
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -c "from PIL import Image; Image.open('src/hoplet/assets/icons/app.png').save('dist/hoplet.ico', sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])"
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.version.outputs.version }}" packaging\windows\hoplet.iss
+          if (-not (Test-Path dist\Hoplet-Setup.exe)) { throw "installer not built" }
+
+      - name: macOS disk image
+        if: runner.os == 'macOS'
+        run: packaging/macos/build_dmg.sh
+
+      - name: Linux AppImage
+        if: runner.os == 'Linux'
+        run: packaging/linux/build_appimage.sh
+
+      # ---- publish
+      - name: Collect
+        shell: bash
+        run: |
+          mkdir out
+          cp dist/Hoplet-Setup.exe dist/*.dmg dist/*.AppImage out/ 2>/dev/null || true
+          ls -l out
+          test -n "$(ls out)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hoplet-${{ steps.version.outputs.version }}-${{ runner.os }}-${{ runner.arch }}
+          path: out/*
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" out/* --clobber

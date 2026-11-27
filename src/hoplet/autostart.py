@@ -8,20 +8,24 @@
 * macOS:   a LaunchAgent, ~/Library/LaunchAgents/io.github.hoplet.plist (login);
            no app-menu entry (start it with `hoplet` from a terminal)
 
-Everything runs the app with the same Python interpreter that's running now,
-so it works for pipx, pip --user, virtualenvs and development installs alike.
+Everything starts this same installation: for pip/pipx/dev installs, the
+Python interpreter that's running now with `-m hoplet`; for the standalone
+apps (packaging/), the app itself. On Windows the installer owns the Start
+Menu shortcut, so the app doesn't make one.
 """
 from __future__ import annotations
 
 import logging
+import os
 import plistlib
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 from . import paths
-from .paths import APP_ICON, APP_ID, CACHE_DIR
+from .paths import APP_ICON, APP_ID, CACHE_DIR, DATA_DIR
 
 log = logging.getLogger(__name__)
 
@@ -36,11 +40,20 @@ def _gui_python() -> str:
     return str(exe)
 
 
+def app_command() -> list[str]:
+    """Program and arguments that start this installation of Hoplet."""
+    if paths.IS_FROZEN:
+        # An AppImage runs from a temporary mount; $APPIMAGE is the real file.
+        return [os.environ.get("APPIMAGE") or sys.executable]
+    return [_gui_python(), "-m", "hoplet"]
+
+
 def command() -> str:
-    """Command line that starts the app with the current interpreter."""
+    """app_command() as a single command line."""
+    program, *args = app_command()
     if paths.IS_WINDOWS:
-        return f'"{_gui_python()}" -m hoplet'
-    return f"{shlex.quote(sys.executable)} -m hoplet"
+        return " ".join([f'"{program}"', *args])
+    return " ".join(shlex.quote(part) for part in (program, *args))
 
 
 def _write(path: Path, data: str | bytes) -> None:
@@ -69,6 +82,20 @@ if paths.IS_LINUX:
     AUTOSTART_FILE: Path | None = paths.AUTOSTART_DIR / f"{APP_ID}.desktop"
     LAUNCHER_FILE: Path | None = paths.APPLICATIONS_DIR / f"{APP_ID}.desktop"
 
+    def _icon() -> Path:
+        """The AppImage's own files vanish when it exits, so menu entries
+        need a copy of the icon that stays put."""
+        if not paths.IS_FROZEN:
+            return APP_ICON
+        kept = DATA_DIR / "hoplet.png"
+        try:
+            if not kept.exists() or kept.read_bytes() != APP_ICON.read_bytes():
+                kept.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(APP_ICON, kept)
+        except OSError as exc:
+            log.warning("Could not copy the icon (%s)", exc)
+        return kept
+
     def desktop_entry(autostart: bool) -> str:
         lines = [
             "[Desktop Entry]",
@@ -76,7 +103,7 @@ if paths.IS_LINUX:
             "Name=Hoplet",
             "Comment=A tiny desktop friend who reminds you to move",
             f"Exec={command()}",
-            f"Icon={APP_ICON}",
+            f"Icon={_icon()}",
             "Terminal=false",
             "Categories=Utility;",
             "Keywords=health;break;reminder;stretch;posture;",
@@ -139,8 +166,9 @@ elif paths.IS_WINDOWS:
             return ""
 
     def install_launcher() -> None:
-        """Start Menu shortcut, made once with PowerShell (no extra dependencies)."""
-        if LAUNCHER_FILE.exists():
+        """Start Menu shortcut, made once with PowerShell (no extra dependencies).
+        The standalone app's installer makes its own, so skip it there."""
+        if paths.IS_FROZEN or LAUNCHER_FILE.exists():
             return
 
         def q(value) -> str:                 # PowerShell single-quoted string
@@ -173,7 +201,7 @@ else:
     def launch_agent() -> bytes:
         return plistlib.dumps({
             "Label": "io.github.hoplet",
-            "ProgramArguments": [sys.executable, "-m", "hoplet"],
+            "ProgramArguments": app_command(),
             "RunAtLoad": True,
             "ProcessType": "Interactive",
         })

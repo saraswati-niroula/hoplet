@@ -31,6 +31,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7", "build", "twine"]
+# Building the standalone apps (packaging/hoplet.spec); Pillow converts the icon.
+app = ["pyinstaller>=6", "pillow"]
 
 [project.scripts]
 hoplet = "hoplet.main:main"

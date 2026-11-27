@@ -163,6 +163,20 @@ def test_desktop_integration():
     assert autostart.remove_all() == []
 
 
+def test_standalone_app_command(monkeypatch):
+    """In the PyInstaller apps, login/menu entries start the app itself, and
+    an AppImage is started from its real file, not its temporary mount."""
+    import sys
+    from hoplet import paths
+    monkeypatch.setattr(paths, "IS_FROZEN", True)
+    monkeypatch.delenv("APPIMAGE", raising=False)
+    assert autostart.app_command() == [sys.executable]
+    monkeypatch.setenv("APPIMAGE", "/home/me/Apps/Hoplet-x86_64.AppImage")
+    assert autostart.app_command() == ["/home/me/Apps/Hoplet-x86_64.AppImage"]
+    monkeypatch.setattr(paths, "IS_FROZEN", False)
+    assert autostart.app_command()[1:] == ["-m", "hoplet"]
+
+
 def test_character_name():
     m = MessageManager()
     m.name = "Momo"

@@ -31,6 +31,9 @@ DEFAULT_MESSAGES_FILE = ASSETS_DIR / "messages.json"
 IS_WINDOWS = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
 IS_LINUX = not (IS_WINDOWS or IS_MAC)
+# True in the standalone apps built with PyInstaller (see packaging/), where
+# there is no separate Python: sys.executable is Hoplet itself.
+IS_FROZEN = bool(getattr(sys, "frozen", False))
 
 
 def _env_dir(var: str, fallback: Path) -> Path:

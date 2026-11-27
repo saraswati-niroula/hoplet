@@ -19,9 +19,40 @@ away again. It's a desktop pet, not a nagging productivity tool.
 - Working hours, pause, snooze length, size, autostart at login
 - Lightweight: no CPU at all between visits
 
-## Install
+## Download
 
-Hoplet needs **Python 3.9+**. Install it with [pipx](https://pipx.pypa.io/), which
+No Python or terminal needed. Get the file for your computer from the
+[latest release](https://github.com/saraswati-niroula/hoplet/releases/latest):
+
+| Your computer | Download | Then |
+|---|---|---|
+| **Windows** 10 / 11 | `Hoplet-Setup.exe` | run it and click through the installer |
+| **Mac** with Apple silicon (M1 or newer) | `Hoplet-macOS-arm64.dmg` | open it and drag **Hoplet** into **Applications** |
+| **Mac** with an Intel processor | `Hoplet-macOS-intel.dmg` | same as above |
+| **Linux** | `Hoplet-x86_64.AppImage` | right-click → *Properties* → allow running as a program, then double-click it |
+
+Not sure which Mac you have? Apple menu → **About This Mac**: *Chip: Apple M…* means
+Apple silicon, *Processor: Intel* means Intel.
+
+### The first time you open it
+
+Hoplet isn't signed with a paid developer certificate (yet), so Windows and macOS
+show a warning the first time. This only happens once.
+
+- **Windows:** if you see *"Windows protected your PC"*, click **More info**, then
+  **Run anyway**.
+- **macOS:** if you see *"Hoplet can't be opened"* or *"Apple could not verify…"*,
+  click **Done** (not *Move to Trash*). Then open **System Settings → Privacy &
+  Security**, scroll down to the message about Hoplet and click **Open Anyway**.
+  Enter your password if asked. Hoplet then opens normally from now on.
+
+After that, Hoplet lives in your system tray (the menu bar on a Mac) and starts by
+itself when you log in. To see it right away, click its tray icon and choose
+**Show reminder now**.
+
+## Install with pipx
+
+For people comfortable with a terminal. Hoplet needs **Python 3.9+**. Install it with [pipx](https://pipx.pypa.io/), which
 keeps it in its own little environment.
 
 **Linux**: pipx and one small system library:
@@ -183,6 +214,11 @@ hoplet --uninstall      # removes the menu/Start Menu entry, autostart entry and
 pipx uninstall hoplet
 ```
 
+If you used a download instead: on **Windows**, go to *Settings → Apps → Hoplet →
+Uninstall*. On a **Mac**, quit Hoplet from the menu bar and drag it from
+Applications to the Trash. On **Linux**, run the AppImage with `--uninstall`,
+then delete the file.
+
 Your settings and custom art are kept unless you delete them yourself
 (`hoplet --uninstall` prints where they are).
 
@@ -190,10 +226,10 @@ Your settings and custom art are kept unless you delete them yourself
 
 - **Nothing appears:** check `companion.log` in the cache folder (see
   [Settings](#settings)), or run `hoplet --show-now -v` in a terminal.
-- **"needs the libxcb-cursor0 system library":** install it as shown in [Install](#install).
+- **"needs the libxcb-cursor0 system library":** install it as shown in [Install with pipx](#install-with-pipx).
 - **Wayland:** Wayland doesn't let apps position their own windows or stay on
   top, so Hoplet automatically runs through XWayland. You don't need to do anything.
-- **No tray icon:** see the GNOME note in [Install](#install); the right-click
+- **No tray icon:** see the GNOME note in [Install with pipx](#install-with-pipx); the right-click
   menu on the character always works.
 
 Hoplet runs on Linux desktops on X11 or XWayland (GNOME, KDE, XFCE, …),
@@ -265,10 +301,30 @@ Notes:
 - PySide6 6.12.0 crashes on Python < 3.12 (`none_dealloc: deallocating None`),
   so `pyproject.toml` keeps those Python versions on PySide6 < 6.12.
 
+### Building the standalone apps
+
+The `packaging/` folder turns Hoplet into apps that don't need Python
+(PyInstaller), and the `apps.yml` workflow builds them on Windows, macOS and
+Linux. To build one locally, on the system you're building for:
+
+```bash
+pip install -e ".[app]"
+pyinstaller packaging/hoplet.spec --noconfirm   # dist/Hoplet/ or dist/Hoplet.app
+packaging/linux/build_appimage.sh               # Linux: dist/Hoplet-x86_64.AppImage
+packaging/macos/build_dmg.sh                    # macOS: dist/Hoplet-macOS-<arch>.dmg
+```
+
+The Windows installer needs [Inno Setup](https://jrsoftware.org/isinfo.php); see
+`apps.yml` for the exact commands. For test builds without a release, run the
+workflow by hand (*Actions → Apps → Run workflow*) and download the results from
+the run's *Artifacts*.
+
 ### Releasing
 
 1. Bump `__version__` in `src/hoplet/__init__.py`.
-2. Create a GitHub Release. The `release.yml` workflow builds the package and publishes it to PyPI.
+2. Create a GitHub Release with the tag `v` + that version (e.g. `v0.1.0`).
+   The `release.yml` workflow publishes the package to PyPI, and `apps.yml`
+   builds the Windows, macOS and Linux downloads and attaches them to the release.
    One-time setup: on pypi.org, add this repository as a *trusted publisher*
    (workflow `release.yml`, environment `pypi`).
 
